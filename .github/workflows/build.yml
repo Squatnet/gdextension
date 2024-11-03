@@ -36,12 +36,6 @@ jobs:
             target: template_release
             platform: windows
             arch: x86_64
-          - identifier: android-debug
-            name: Android Debug
-            runner: ubuntu-20.04
-            target: template_debug
-            platform: android
-            arch: arm64
           - identifier: android-release
             name: Android Release
             runner: ubuntu-20.04
@@ -94,30 +88,29 @@ jobs:
           scons --version
 
       - name: Checkout project
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
 
-#       TODO: Cache doesn't work yet. SCons rebuilds the objects even if they already exist. Could be caused by modification dates or extension_api.json.
-#             fetch-depth: 0 May be needed for cache. See: <https://github.com/actions/checkout/issues/468>.
-#      - name: Set up SCons cache
-#        uses: actions/cache@v3
-#        with:
-#          path: |
-#            ${{ github.workspace }}/.scons-cache/
-#            ${{ github.workspace }}/**/.sconsign.dblite
-#            ${{ github.workspace }}/godot-cpp/gen/
-#          key: ${{ matrix.identifier }}-${{ github.ref }}-${{ github.sha }}
-#          restore-keys: |
-#            ${{ matrix.identifier }}-${{ github.ref }}-${{ github.sha }}
-#            ${{ matrix.identifier }}-${{ github.ref }}
-#            ${{ matrix.identifier }}
+      - name: Set up SCons cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/.scons-cache/
+            ${{ github.workspace }}/**/.sconsign.dblite
+            ${{ github.workspace }}/godot-cpp/gen/
+          key: ${{ matrix.identifier }}-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ${{ matrix.identifier }}-${{ github.ref }}-${{ github.sha }}
+            ${{ matrix.identifier }}-${{ github.ref }}
+            ${{ matrix.identifier }}
 
       - name: Compile extension
         shell: sh
-#        env:
-#          SCONS_CACHE: '${{ github.workspace }}/.scons-cache/'
-#          SCONS_CACHE_LIMIT: 8192
+        env:
+          SCONS_CACHE: '${{ github.workspace }}/.scons-cache/'
+          SCONS_CACHE_LIMIT: 4096
         run: |
           scons target='${{ matrix.target }}' platform='${{ matrix.platform }}' arch='${{ matrix.arch }}' -j2
           ls -l project/addons/*/bin/
@@ -130,7 +123,7 @@ jobs:
           done
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.repository.name }}
           path: |
